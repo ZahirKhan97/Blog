@@ -16,7 +16,7 @@ class PostController extends BaseController
      */
     public function index()
     {
-        $posts = Post::all();
+        $posts = Post::with('comments')->get();
         if ($posts->isNotEmpty()) {
             return $this->sendResponse($posts, 'All Posts');
         } else {
@@ -53,7 +53,7 @@ class PostController extends BaseController
      */
     public function show(string $id)
     {
-        $post = Post::find($id);
+        $post = Post::with('comments')->find($id);
         if ($post) {
             return $this->sendResponse($post, 'Single Post');
         } else {
@@ -67,6 +67,9 @@ class PostController extends BaseController
     public function update(Request $request, string $id)
     {
         $post = Post::find($id);
+        if ($post->user_id !== Auth::id()) {
+            return $this->sendResponse([], 'Unauthorized');
+        }
         if ($post) {
             $validator = Validator::make($request->all(), [
                 'title' => 'required|min:3',
@@ -95,9 +98,14 @@ class PostController extends BaseController
     public function destroy(string $id)
     {
         $post = Post::find($id);
-        if ($post) {
-            $post->delete();
-            return $this->sendResponse(null, 'Post Deleted Successfully');
+        if (!$post) {
+            return $this->sendError('Post not found', [], 404);
         }
+
+        if ($post->user_id !== Auth::id()) {
+            return $this->sendError('You cannot delete this Post', 'You are not Authorized', 403);
+        }
+        $post->delete();
+        return $this->sendResponse(null, 'Post Deleted Successfully');
     }
 }
