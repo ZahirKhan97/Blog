@@ -19,7 +19,7 @@ class PostController extends BaseController
      */
     public function index()
     {
-        $posts = Post::with('comments')->get();
+        $posts = Post::with('comments')->paginate(2);
         if ($posts->isNotEmpty()) {
             return $this->sendResponse($posts, 'All Posts');
         } else {
